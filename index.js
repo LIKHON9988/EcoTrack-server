@@ -1,17 +1,18 @@
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
-const app = express();
+const dotenv = require("dotenv");
 
+dotenv.config(); // Load .env variables
+
+const app = express();
 const port = process.env.PORT || 3000;
 
-// midleware
-
+// middleware
 app.use(cors());
 app.use(express.json());
 
-const uri =
-  "mongodb+srv://Eco-Track:8RAw5p4jLpJnVUmZ@cluster30.jaxhuvk.mongodb.net/?appName=Cluster30";
+const uri = process.env.MONGO_URI;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -22,84 +23,63 @@ const client = new MongoClient(uri, {
 });
 
 app.get("/", (req, res) => {
-  res.send("Eco-Track is running");
+  res.send("Eco-Track server is running ✅");
 });
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     const db = client.db("Eco_db");
     const challengesColl = db.collection("challenges");
     const userColl = db.collection("User_coll");
+    const activitiesColl = db.collection("activities");
 
+    // ---------- Challenges ----------
     app.get("/challenges", async (req, res) => {
-      console.log(req.query);
       const email = req.query.email;
-      const query = {};
-      if (email) {
-        query.createdBy = email;
-      }
-
-      const cursor = challengesColl.find(query);
-      const result = await cursor.toArray();
+      const query = email ? { createdBy: email } : {};
+      const result = await challengesColl.find(query).toArray();
       res.send(result);
     });
 
     app.get("/active-challenges", async (req, res) => {
-      const cursor = challengesColl.find().limit(6);
-      const result = await cursor.toArray();
+      const result = await challengesColl.find().limit(6).toArray();
       res.send(result);
     });
 
     app.get("/challenges/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await challengesColl.findOne(query);
+      const result = await challengesColl.findOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
     app.post("/challenges", async (req, res) => {
-      const newChallange = req.body;
-      const result = await challengesColl.insertOne(newChallange);
-
+      const newChallenge = req.body;
+      const result = await challengesColl.insertOne(newChallenge);
       res.send(result);
-    });
-
-    app.post("/challengesActivities/:id", async (req, res) => {
-      const id = res.params.id;
-      const query = { _id: new ObjectId(id) };
-      const newCard = req.body;
-      const result = await challengesColl.insertOne(newCard);
     });
 
     app.patch("/challenges/:id", async (req, res) => {
       const id = req.params.id;
       const updateChallenge = req.body;
-      const query = { _id: new ObjectId(id) };
-      const update = {
-        $set: updateChallenge,
-      };
-      const result = await challengesColl.updateOne(query, update);
+      const result = await challengesColl.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateChallenge }
+      );
       res.send(result);
     });
 
     app.delete("/challenges/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await challengesColl.deleteOne(query);
+      const result = await challengesColl.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    // ----------------------------------------------------------------------------------------------
-    const activitiesColl = db.collection("activities");
-
+    // ---------- Activities ----------
     app.get("/activities", async (req, res) => {
       const email = req.query.email;
-      if (!email) {
-        return res.status(401).send({ message: "Unauthorized" });
-      }
+      if (!email) return res.status(401).send({ message: "Unauthorized" });
 
       const result = await activitiesColl.find({ userEmail: email }).toArray();
       res.send(result);
@@ -107,18 +87,14 @@ async function run() {
 
     app.post("/activities", async (req, res) => {
       const { userEmail, challenge } = req.body;
-      if (!userEmail) {
-        return res.status(401).send({ message: "Unauthorized" });
-      }
+      if (!userEmail) return res.status(401).send({ message: "Unauthorized" });
 
       const existing = await activitiesColl.findOne({
         userEmail,
         "challenge._id": challenge._id,
       });
 
-      if (existing) {
-        return res.status(400).send({ message: "Already joined" });
-      }
+      if (existing) return res.status(400).send({ message: "Already joined" });
 
       const result = await activitiesColl.insertOne({
         userEmail,
@@ -135,15 +111,16 @@ async function run() {
       res.send(result);
     });
 
+    // Check DB connection
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
+    console.log("✅ MongoDB connected successfully");
+  } catch (error) {
+    console.error("❌ Server error:", error);
   }
 }
+
 run().catch(console.dir);
 
 app.listen(port, () => {
-  console.log(`Eco-Track is runnong on port : ${port}`);
+  console.log(`🚀 Eco-Track server running on port ${port}`);
 });
