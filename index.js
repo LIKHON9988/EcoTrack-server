@@ -3,7 +3,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-dotenv.config(); // Load .env variables
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 });
 
 app.get("/", (req, res) => {
-  res.send("Eco-Track server is running ✅");
+  res.send("Eco-Track server is running ");
 });
 
 async function run() {
@@ -32,8 +32,9 @@ async function run() {
 
     const db = client.db("Eco_db");
     const challengesColl = db.collection("challenges");
-    const userColl = db.collection("User_coll");
+    const tipsColl = db.collection("tips");
     const activitiesColl = db.collection("activities");
+    const UpcommingEventColl = db.collection("upcomming_events");
 
     // ---------- Challenges ----------
     app.get("/challenges", async (req, res) => {
@@ -110,17 +111,39 @@ async function run() {
       const result = await activitiesColl.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
+    // ---------tips-------------
+    app.get("/tips", async (req, res) => {
+      try {
+        const result = await tipsColl.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching tips:", error);
+        res.status(500).send({ message: "Failed to load tips" });
+      }
+    });
+
+    // ------------Upcomming events----------------
+
+    app.get("/upcoming-events", async (req, res) => {
+      try {
+        const result = await UpcommingEventColl.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching upcoming events:", error);
+        res.status(500).send({ message: "Failed to load events" });
+      }
+    });
 
     // Check DB connection
     await client.db("admin").command({ ping: 1 });
-    console.log("✅ MongoDB connected successfully");
+    console.log(" MongoDB connected successfully");
   } catch (error) {
-    console.error("❌ Server error:", error);
+    console.error(" Server error:", error);
   }
 }
 
 run().catch(console.dir);
 
 app.listen(port, () => {
-  console.log(`🚀 Eco-Track server running on port ${port}`);
+  console.log(` Eco-Track server running on port ${port}`);
 });
