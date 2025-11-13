@@ -47,7 +47,7 @@ async function run() {
     app.get("/active-challenges", async (req, res) => {
       const result = await challengesColl
         .find()
-        .sort({ startDate: -1 })
+        .sort({ startDate: 1 })
         .limit(6)
         .toArray();
       res.send(result);
