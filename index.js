@@ -122,7 +122,7 @@ async function run() {
       }
     });
 
-    // ------------Upcomming events----------------
+    // ------------Upcomming events-----
 
     app.get("/upcoming-events", async (req, res) => {
       try {
