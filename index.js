@@ -45,7 +45,11 @@ async function run() {
     });
 
     app.get("/active-challenges", async (req, res) => {
-      const result = await challengesColl.find().limit(6).toArray();
+      const result = await challengesColl
+        .find()
+        .sort({ startDate: -1 })
+        .limit(6)
+        .toArray();
       res.send(result);
     });
 
@@ -135,7 +139,7 @@ async function run() {
     });
 
     // Check DB connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(" MongoDB connected successfully");
   } catch (error) {
     console.error(" Server error:", error);
